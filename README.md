@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.11-blue)
 ![Coverage](https://img.shields.io/badge/coverage-%3E%3D80%25-brightgreen)
-![CI](https://img.shields.io/badge/CI-GitHub%20Actions-blue)
+[![CI](https://github.com/Nhkp/chatbot-incendie/actions/workflows/ci.yml/badge.svg)](https://github.com/Nhkp/chatbot-incendie/actions/workflows/ci.yml)
 ![Code style](https://img.shields.io/badge/code%20style-ruff-black)
 
 RAG chatbot specialized in questions about wildfires in Gironde and Landes, France, in 2026.
