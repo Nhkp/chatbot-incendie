@@ -9,8 +9,11 @@ description = "RAG chatbot about wildfires in Gironde and Landes, France, in 202
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = [
+    "fastapi>=0.141.0",
     "pymilvus>=3.0.0",
     "sentence-transformers>=5.6.1",
+    "streamlit>=1.60.0",
+    "uvicorn>=0.52.0",
 ]
 
 [dependency-groups]
