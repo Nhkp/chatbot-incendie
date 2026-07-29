@@ -14,12 +14,12 @@ from chatbot_incendie.domain import RawDocument, Source
 TARGET_DEPARTMENTS = {"33", "40"}
 METEO_DES_FORETS_API_BASE_URL = "https://public-api.meteofrance.fr/public/DPMeteoForets/v1"
 METEO_FRANCE_API_KEY_HEADER = "apikey"
-REQUIRED_METEO_DES_FORETS_FIELDS = {
-    "Reference_time",
-    "dep_code",
-    "niveau_j1",
-    "niveau_j2",
-    "nom_dep",
+METEO_DES_FORETS_FIELD_ALIASES = {
+    "Reference_time": ("Reference_time", "reference_time"),
+    "dep_code": ("dep_code",),
+    "niveau_j1": ("niveau_j1",),
+    "niveau_j2": ("niveau_j2",),
+    "nom_dep": ("nom_dep", "dep_nom"),
 }
 DANGER_LABELS = {
     "1": "faible",
@@ -101,7 +101,12 @@ def parse_meteo_des_forets_archive(
     if reader.fieldnames is None:
         raise ValueError("Meteo des forets CSV must contain a header")
 
-    missing_fields = REQUIRED_METEO_DES_FORETS_FIELDS - set(reader.fieldnames)
+    fieldnames = set(reader.fieldnames)
+    missing_fields = {
+        field
+        for field, aliases in METEO_DES_FORETS_FIELD_ALIASES.items()
+        if fieldnames.isdisjoint(aliases)
+    }
     if missing_fields:
         missing = ", ".join(sorted(missing_fields))
         raise ValueError(f"Meteo des forets CSV is missing required fields: {missing}")
@@ -151,10 +156,11 @@ def _content_from_row(row: dict[str, str | None]) -> str:
 
 
 def _required_field(row: dict[str, str | None], field: str) -> str:
-    value = row[field]
-    if value is None or not value.strip():
-        raise ValueError(f"Meteo des forets CSV field must not be empty: {field}")
-    return value.strip()
+    for alias in METEO_DES_FORETS_FIELD_ALIASES[field]:
+        value = row.get(alias)
+        if value is not None and value.strip():
+            return value.strip()
+    raise ValueError(f"Meteo des forets CSV field must not be empty: {field}")
 
 
 def _danger_level(row: dict[str, str | None], field: str) -> str:

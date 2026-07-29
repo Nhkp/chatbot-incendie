@@ -69,6 +69,17 @@ def test_meteo_des_forets_parser_accepts_semicolon_csv() -> None:
     assert len(documents) == 1
 
 
+def test_meteo_des_forets_parser_accepts_realtime_csv_field_names() -> None:
+    csv_text = (
+        "reference_time;dep_code;niveau_j1;niveau_j2;dep_nom\n2026-07-28T14:50:04Z;33;3;2;Gironde\n"
+    )
+
+    documents = parse_meteo_des_forets_archive(csv_text, _source(), "https://example.com/mdf.csv")
+
+    assert documents[0].title == "Meteo des forets 33 - 2026-07-28T14:50:04Z"
+    assert "Departement 33 (Gironde)" in documents[0].content
+
+
 def test_meteo_des_forets_parser_rejects_missing_required_column() -> None:
     csv_text = "Reference_time,dep_code,niveau_j1,nom_dep\n2026-07-29T17:00:00+00:00,33,3,Gironde\n"
 
