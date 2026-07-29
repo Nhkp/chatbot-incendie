@@ -1,10 +1,14 @@
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from chatbot_incendie.connectors import MeteoDesForetsArchiveConnector
+from chatbot_incendie.connectors import (
+    MeteoDesForetsArchiveConnector,
+    MeteoDesForetsRealtimeConnector,
+)
 from chatbot_incendie.domain import RawDocument, Source, SourceStatus, SourceType
 from chatbot_incendie.jsonl_store import read_raw_documents
 from chatbot_incendie.pipeline import run_clean_ingestion_pipeline
@@ -23,6 +27,14 @@ class FakeTextClient:
     text: str
 
     def get_text(self, url: str) -> str:
+        return self.text
+
+
+@dataclass(frozen=True)
+class FakeAuthenticatedTextClient:
+    text: str
+
+    def get_text(self, url: str, headers: Mapping[str, str]) -> str:
         return self.text
 
 
@@ -86,11 +98,49 @@ def test_meteo_des_forets_connector_runs_through_clean_ingestion_pipeline(
     ]
 
 
+def test_meteo_des_forets_realtime_connector_runs_through_clean_ingestion_pipeline(
+    tmp_path: Path,
+) -> None:
+    source = _realtime_source()
+    connector = MeteoDesForetsRealtimeConnector(
+        client=FakeAuthenticatedTextClient(_meteo_des_forets_csv()),
+        api_key="test-key",
+        base_url="https://example.com/api",
+        departments=("33",),
+    )
+
+    result = run_clean_ingestion_pipeline(
+        source=source,
+        connector=connector,
+        output_dir=tmp_path,
+        collected_at=datetime(2026, 7, 29, 18, 0, tzinfo=UTC),
+    )
+    written_documents = read_raw_documents(result.output_path)
+
+    assert result.output_count == 2
+    assert [document.source_id for document in written_documents] == [
+        "meteo-des-forets-realtime",
+        "meteo-des-forets-realtime",
+    ]
+
+
 def _meteo_des_forets_csv() -> str:
     return (
         "Reference_time,dep_code,niveau_j1,niveau_j2,nom_dep\n"
         "2026-07-29T17:00:00+00:00,33,3,4,Gironde\n"
         "2026-07-29T17:00:00+00:00,40,4,4,Landes\n"
+    )
+
+
+def _realtime_source() -> Source:
+    return Source(
+        id="meteo-des-forets-realtime",
+        name="Meteo des forets realtime",
+        type=SourceType.API,
+        url="https://public-api.meteofrance.fr/public/DPMeteoForets/v1",
+        status=SourceStatus.CANDIDATE,
+        usage_notes="Real-time wildfire danger prevention context.",
+        rate_limit_notes="Portal quota to verify.",
     )
 
 

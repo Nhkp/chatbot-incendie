@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 import csv
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from io import StringIO
-from typing import Protocol
+from typing import Protocol, cast
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 from chatbot_incendie.domain import RawDocument, Source
 
 TARGET_DEPARTMENTS = {"33", "40"}
+METEO_DES_FORETS_API_BASE_URL = "https://public-api.meteofrance.fr/public/DPMeteoForets/v1"
+METEO_FRANCE_API_KEY_HEADER = "apikey"
 REQUIRED_METEO_DES_FORETS_FIELDS = {
     "Reference_time",
     "dep_code",
@@ -28,8 +33,24 @@ class HttpClient(Protocol):
     def get_text(self, url: str) -> str: ...
 
 
+class AuthenticatedHttpClient(Protocol):
+    def get_text(self, url: str, headers: Mapping[str, str]) -> str: ...
+
+
 class SourceConnector(Protocol):
     def fetch(self, source: Source) -> list[RawDocument]: ...
+
+
+@dataclass(frozen=True)
+class UrlopenTextClient:
+    timeout_seconds: float = 30.0
+
+    def get_text(self, url: str, headers: Mapping[str, str]) -> str:
+        request = Request(url=url, headers=dict(headers))
+        with urlopen(request, timeout=self.timeout_seconds) as response:
+            charset = str(response.headers.get_content_charset() or "utf-8")
+            body = cast(bytes, response.read())
+            return body.decode(charset)
 
 
 @dataclass(frozen=True)
@@ -43,6 +64,32 @@ class MeteoDesForetsArchiveConnector:
             source=source,
             archive_url=self.archive_url,
         )
+
+
+@dataclass(frozen=True)
+class MeteoDesForetsRealtimeConnector:
+    client: AuthenticatedHttpClient
+    api_key: str
+    base_url: str = METEO_DES_FORETS_API_BASE_URL
+    departments: Sequence[str] = ("33", "40")
+
+    def fetch(self, source: Source) -> list[RawDocument]:
+        if not self.api_key.strip():
+            raise ValueError("Meteo-France API key must not be empty")
+
+        documents: list[RawDocument] = []
+        for department in self.departments:
+            url = _realtime_department_url(self.base_url, department)
+            documents.extend(
+                parse_meteo_des_forets_archive(
+                    csv_text=self.client.get_text(
+                        url, headers={METEO_FRANCE_API_KEY_HEADER: self.api_key}
+                    ),
+                    source=source,
+                    archive_url=url,
+                )
+            )
+        return documents
 
 
 def parse_meteo_des_forets_archive(
@@ -80,6 +127,11 @@ def parse_meteo_des_forets_archive(
 def _detect_delimiter(csv_text: str) -> str:
     header = csv_text.splitlines()[0] if csv_text.splitlines() else ""
     return ";" if header.count(";") > header.count(",") else ","
+
+
+def _realtime_department_url(base_url: str, department: str) -> str:
+    query = urlencode({"format": "csv", "echeance": "J1J2", "id-departement": department})
+    return f"{base_url.rstrip('/')}/carte/departement/encours?{query}"
 
 
 def _content_from_row(row: dict[str, str | None]) -> str:
