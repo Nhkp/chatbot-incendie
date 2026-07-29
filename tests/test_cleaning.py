@@ -78,6 +78,15 @@ def test_deduplicate_documents_keeps_first_content_fingerprint() -> None:
     assert deduplicate_documents(documents) == [documents[0]]
 
 
+def test_deduplicate_documents_preserves_same_content_from_different_sources() -> None:
+    documents = [
+        _document(source_id="source-a", url="https://example.com/a", content="Same content"),
+        _document(source_id="source-b", url="https://example.com/b", content="Same content"),
+    ]
+
+    assert deduplicate_documents(documents) == documents
+
+
 def test_deduplicate_documents_preserves_distinct_documents_order() -> None:
     documents = [
         _document(url="https://example.com/a", content="A"),
@@ -126,12 +135,13 @@ def test_connector_cleaning_and_ingestion_flow(tmp_path: Path) -> None:
 
 def _document(
     *,
+    source_id: str = "source",
     url: str,
     content: str = "Content",
     canonical_url: str | None = None,
 ) -> RawDocument:
     return RawDocument(
-        source_id="source",
+        source_id=source_id,
         url=url,
         canonical_url=canonical_url,
         content=content,

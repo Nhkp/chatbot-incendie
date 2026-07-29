@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+
 from chatbot_incendie.connectors import MeteoDesForetsArchiveConnector
 from chatbot_incendie.domain import RawDocument, Source, SourceStatus, SourceType
 from chatbot_incendie.jsonl_store import read_raw_documents
@@ -45,7 +47,18 @@ def test_clean_ingestion_pipeline_writes_deduplicated_documents(tmp_path: Path) 
     assert result.rejected_count == 0
     assert result.collected_at == collected_at
     assert result.output_path == tmp_path / "2026-07-29" / f"{source.id}.jsonl"
+    assert result.output_count == len(written_documents)
     assert [document.content for document in written_documents] == ["A", "B"]
+
+
+def test_clean_ingestion_pipeline_rejects_unexpected_source_id(tmp_path: Path) -> None:
+    source = _source()
+    connector = FakeConnector(
+        [RawDocument(source_id="other-source", url="https://example.com/a", content="A")]
+    )
+
+    with pytest.raises(ValueError, match="unexpected source ids: other-source; expected:"):
+        run_clean_ingestion_pipeline(source, connector, tmp_path)
 
 
 def test_meteo_des_forets_connector_runs_through_clean_ingestion_pipeline(

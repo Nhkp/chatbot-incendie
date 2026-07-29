@@ -34,12 +34,12 @@ def clean_document(document: RawDocument) -> RawDocument:
 
 def deduplicate_documents(documents: Sequence[RawDocument]) -> list[RawDocument]:
     seen_urls: set[str] = set()
-    seen_fingerprints: set[str] = set()
+    seen_fingerprints: set[tuple[str, str]] = set()
     deduplicated: list[RawDocument] = []
 
     for document in documents:
         canonical_url = document.canonical_url or document.url
-        fingerprint = _content_fingerprint(document.content)
+        fingerprint = (document.source_id, _content_fingerprint(document.content))
         if canonical_url in seen_urls or fingerprint in seen_fingerprints:
             continue
         seen_urls.add(canonical_url)
