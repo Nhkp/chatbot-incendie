@@ -132,3 +132,93 @@ url = "https://www.sudouest.fr/landes/"
 status = "candidate"
 usage_notes = "Local news articles for Landes."
 rate_limit_notes = "Validate terms and robots.txt before scraping."
+
+[[sources]]
+id = "meteo-france-vigilance-api"
+name = "Meteo-France Vigilance API"
+type = "api"
+url = "https://public-api.meteofrance.fr/public/DPVigilance/v1"
+status = "candidate"
+usage_notes = "Official weather vigilance context for safety-sensitive local answers; requires Meteo-France API key."
+rate_limit_notes = "Use METEO_FRANCE_API_KEY; verify quota in the Meteo-France API portal before hourly automation."
+
+[[sources]]
+id = "meteo-france-forecast-api"
+name = "Meteo-France Forecast API"
+type = "api"
+url = "https://public-api.meteofrance.fr/public/DPPrevision/v1"
+status = "candidate"
+usage_notes = "Official forecast context for wind, temperature, precipitation, and fire-risk conditions; requires Meteo-France API key."
+rate_limit_notes = "Use METEO_FRANCE_API_KEY; cache responses and keep polling conservative."
+
+[[sources]]
+id = "meteo-france-observations-api"
+name = "Meteo-France Observations API"
+type = "api"
+url = "https://public-api.meteofrance.fr/public/DPObs/v1"
+status = "candidate"
+usage_notes = "Official observation context from weather stations near Gironde and Landes; requires Meteo-France API key."
+rate_limit_notes = "Use METEO_FRANCE_API_KEY; validate endpoint version and station filters before automation."
+
+[[sources]]
+id = "meteo-data-gouv"
+name = "meteo.data.gouv.fr"
+type = "open_data"
+url = "https://meteo.data.gouv.fr/"
+status = "candidate"
+usage_notes = "Official Météo-France open-data portal for public datasets and archives relevant to weather and wildfire context."
+rate_limit_notes = "Prefer documented dataset downloads; no API key expected for public open-data downloads."
+
+[[sources]]
+id = "nasa-firms-area-api"
+name = "NASA FIRMS Area API"
+type = "api"
+url = "https://firms.modaps.eosdis.nasa.gov/api/area/"
+status = "candidate"
+usage_notes = "Near-real-time satellite active fire and hotspot detections for spatial cross-checking around Gironde and Landes; requires free MAP_KEY."
+rate_limit_notes = "Use NASA_FIRMS_MAP_KEY; respect FIRMS transaction limits and filter tightly to the target area."
+
+[[sources]]
+id = "georisques-api"
+name = "Géorisques API"
+type = "api"
+url = "https://www.georisques.gouv.fr/api/v1/"
+status = "candidate"
+usage_notes = "Official risk datasets for communes and regulatory context around natural and technological risks."
+rate_limit_notes = "No API key expected; validate endpoint-specific limits before automation."
+
+[[sources]]
+id = "bdiff"
+name = "Base de Données sur les Incendies de Forêts en France"
+type = "open_data"
+url = "https://www.data.gouv.fr/datasets/base-de-donnees-sur-les-incendies-de-forets-en-france-bdiff"
+status = "candidate"
+usage_notes = "Official historical wildfire database for background, statistics, and commune-level historical context."
+rate_limit_notes = "Annual/historical dataset; do not poll hourly."
+
+[[sources]]
+id = "atmo-nouvelle-aquitaine-open-data"
+name = "Atmo Nouvelle-Aquitaine Open Data"
+type = "open_data"
+url = "https://www.data.gouv.fr/organizations/atmo-nouvelle-aquitaine-1/"
+status = "candidate"
+usage_notes = "Regional air-quality datasets that can provide smoke and pollution context during wildfire events."
+rate_limit_notes = "No API key expected for public datasets; validate dataset freshness and API/download limits."
+
+[[sources]]
+id = "france-3-gironde"
+name = "France 3 Nouvelle-Aquitaine Gironde"
+type = "news"
+url = "https://france3-regions.franceinfo.fr/nouvelle-aquitaine/gironde"
+status = "candidate"
+usage_notes = "Local public-service news articles for Gironde wildfire, evacuation, road, and municipal updates."
+rate_limit_notes = "Validate terms and robots.txt before scraping; prefer RSS or structured feeds if available."
+
+[[sources]]
+id = "france-3-landes"
+name = "France 3 Nouvelle-Aquitaine Landes"
+type = "news"
+url = "https://france3-regions.franceinfo.fr/nouvelle-aquitaine/landes"
+status = "candidate"
+usage_notes = "Local public-service news articles for Landes wildfire, evacuation, road, and municipal updates."
+rate_limit_notes = "Validate terms and robots.txt before scraping; prefer RSS or structured feeds if available."
