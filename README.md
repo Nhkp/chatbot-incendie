@@ -55,6 +55,13 @@ first run:
 uv run python scripts/run_local_embedding_smoke.py data/raw/2026-07-29/meteo-des-forets-realtime.jsonl
 ```
 
+Start Milvus and index the same JSONL file:
+
+```bash
+docker compose up -d
+uv run python scripts/index_meteo_des_forets_milvus.py data/raw/2026-07-29/meteo-des-forets-realtime.jsonl
+```
+
 ## Documentation
 
 - `docs/project-brief.md`: objective and v1 scope.
