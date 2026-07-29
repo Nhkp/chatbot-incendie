@@ -24,6 +24,9 @@ This file tracks actions that require the project owner outside the codebase.
 
 - [ ] Confirm `@Nhkp` is the correct GitHub owner for `.github/CODEOWNERS`.
 - [ ] Confirm GitHub Actions runs successfully on `main`.
+- [ ] Create the GitHub labels used by Dependabot: `dependencies` and `ci`.
+- [ ] Check whether merged Dependabot PRs closed automatically; close any stale PRs if
+  GitHub leaves them open.
 - [ ] Add repository secrets only when a connector actually needs them.
 - [ ] Avoid adding API keys until there is a tested connector contract.
 
