@@ -4,12 +4,12 @@ This file tracks actions that require the project owner outside the codebase.
 
 ## API accounts and keys
 
-- [ ] Create a Météo-France API portal account: https://portail-api.meteofrance.fr/
-- [ ] Request access to the real-time `DonneesPubliquesMeteoForets` API.
-- [ ] Check whether the Météo-France API portal also grants access to
+- [X] Create a Météo-France API portal account: https://portail-api.meteofrance.fr/
+- [X] Request access to the real-time `DonneesPubliquesMeteoForets` API.
+- [X] Check whether the Météo-France API portal also grants access to
   `DonneesPubliquesVigilance`.
-- [ ] Store the Météo-France API key locally only, never in Git.
-- [ ] Add the final local variable name to `.env` once the connector defines it.
+- [X] Store the Météo-France API key locally only, never in Git.
+- [X] Add the final local variable name to `.env` once the connector defines it.
 - [ ] Create an Infoclimat account/API key later if station observations become useful.
 
 ## Source review
@@ -22,10 +22,10 @@ This file tracks actions that require the project owner outside the codebase.
 
 ## Repository administration
 
-- [ ] Confirm `@Nhkp` is the correct GitHub owner for `.github/CODEOWNERS`.
-- [ ] Confirm GitHub Actions runs successfully on `main`.
+- [X] Confirm `@Nhkp` is the correct GitHub owner for `.github/CODEOWNERS`.
+- [X] Confirm GitHub Actions runs successfully on `main`.
 - [ ] Create the GitHub labels used by Dependabot: `dependencies` and `ci`.
-- [ ] Check whether merged Dependabot PRs closed automatically; close any stale PRs if
+- [X] Check whether merged Dependabot PRs closed automatically; close any stale PRs if
   GitHub leaves them open.
 - [ ] Add repository secrets only when a connector actually needs them.
 - [ ] Avoid adding API keys until there is a tested connector contract.
