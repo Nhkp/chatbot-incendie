@@ -18,6 +18,9 @@ This file tracks actions that require the project owner outside the codebase.
 - [ ] Confirm attribution wording for Météo-France data.
 - [ ] Confirm that the project can use the data under the documented open license.
 - [ ] Review real-time Météo-France API quotas once the account is created.
+- [ ] Manually verify the real-time Météo-France API header with `id-departement=33`.
+- [ ] Manually verify the real-time Météo-France API header with `id-departement=40`.
+- [ ] Save a sanitized Météo-France real-time sample response for tests, without secrets.
 - [ ] Review Infoclimat usage constraints before using it in automated ingestion.
 
 ## Repository administration
