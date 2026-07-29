@@ -68,6 +68,7 @@ def parse_meteo_des_forets_archive(
             RawDocument(
                 source_id=source.id,
                 url=archive_url,
+                canonical_url=f"{archive_url}#{_required_field(row, 'Reference_time')}-{dep_code}",
                 title=f"Meteo des forets {dep_code} - {_required_field(row, 'Reference_time')}",
                 content=_content_from_row(row),
                 published_at=_parse_reference_time(_required_field(row, "Reference_time")),
