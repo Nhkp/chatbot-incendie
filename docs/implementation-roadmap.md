@@ -12,10 +12,10 @@ Build only the domain/data models and the source registry.
 
 ## Milestones
 
-1. Domain models and source registry.
-2. Ingestion skeleton that writes local JSONL raw documents.
-3. Source connectors for approved API-first sources.
-4. Cleaning, deduplication, and metadata normalization.
+1. Domain models and source registry. Done.
+2. Ingestion skeleton that writes local JSONL raw documents. Done.
+3. Source connectors for approved API-first sources. First connector done.
+4. Cleaning, deduplication, and metadata normalization. In progress.
 5. Chunking strategy and deterministic chunk tests.
 6. Embedding interface and local embedding model selection.
 7. Milvus storage and retrieval client.
