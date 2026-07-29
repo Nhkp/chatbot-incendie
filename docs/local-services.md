@@ -25,6 +25,26 @@ Index generated Météo-France JSONL data with:
 uv run python scripts/index_meteo_des_forets_milvus.py data/raw/2026-07-29/meteo-des-forets-realtime.jsonl
 ```
 
+Populate all implemented real sources and index them in Milvus with:
+
+```bash
+make populate-sources
+```
+
+The command loads `.env`, continues if one source fails, and prints per-source raw,
+cleaned, chunk, and upsert counts.
+
+Required keys:
+
+- `METEO_FRANCE_API_KEY` for Météo-France wildfire danger and vigilance APIs.
+- `NASA_FIRMS_MAP_KEY` for NASA FIRMS active fire detections.
+
+Optional endpoint overrides:
+
+- `METEO_FRANCE_API_BASE_URL`
+- `METEO_FRANCE_VIGILANCE_API_BASE_URL`
+- `GEORISQUES_API_BASE_URL`
+
 ## Planned services
 
 - Airflow for hourly ingestion orchestration.

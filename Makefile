@@ -1,4 +1,4 @@
-.PHONY: sync check lint format type test hooks hooks-run demo demo-data api ui clean
+.PHONY: sync check lint format type test hooks hooks-run demo demo-data populate-sources api ui clean
 
 sync:
 	uv sync
@@ -32,6 +32,9 @@ demo-data:
 	docker compose up -d || true; \
 	uv run python scripts/run_meteo_des_forets_realtime.py; \
 	uv run python scripts/index_meteo_des_forets_milvus.py data/raw/$$(date +%F)/meteo-des-forets-realtime.jsonl
+
+populate-sources:
+	uv run python scripts/populate_sources.py
 
 api:
 	uv run uvicorn chatbot_incendie.api:app --host 0.0.0.0 --port 8001

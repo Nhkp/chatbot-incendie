@@ -61,6 +61,18 @@ docker compose up -d
 uv run python scripts/index_meteo_des_forets_milvus.py data/raw/2026-07-29/meteo-des-forets-realtime.jsonl
 ```
 
+Populate every implemented API-first source and index it in Milvus:
+
+```bash
+make populate-sources
+```
+
+This currently fetches Météo des forêts, Météo-France Vigilance, NASA FIRMS, and
+Géorisques. Required API keys:
+
+- `METEO_FRANCE_API_KEY` for Météo-France APIs.
+- `NASA_FIRMS_MAP_KEY` for NASA FIRMS.
+
 Start the local chat API and Streamlit interface:
 
 ```bash
