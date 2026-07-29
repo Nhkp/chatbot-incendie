@@ -1,0 +1,116 @@
+[[sources]]
+id = "data-gouv-fr"
+name = "data.gouv.fr"
+type = "open_data"
+url = "https://www.data.gouv.fr/"
+status = "candidate"
+usage_notes = "Open data portal to review for relevant public datasets."
+rate_limit_notes = "To validate before automation."
+
+[[sources]]
+id = "gironde-prefecture"
+name = "Gironde Prefecture"
+type = "official_website"
+url = "https://www.gironde.gouv.fr/"
+status = "candidate"
+usage_notes = "Official local press releases and instructions."
+rate_limit_notes = "Use conservative polling; exact policy to validate."
+
+[[sources]]
+id = "landes-prefecture"
+name = "Landes Prefecture"
+type = "official_website"
+url = "https://www.landes.gouv.fr/"
+status = "candidate"
+usage_notes = "Official local press releases and instructions."
+rate_limit_notes = "Use conservative polling; exact policy to validate."
+
+[[sources]]
+id = "sdis-33"
+name = "SDIS 33"
+type = "official_website"
+url = "https://www.sdis33.fr/"
+status = "candidate"
+usage_notes = "Public operational information for Gironde."
+rate_limit_notes = "Use conservative polling; exact policy to validate."
+
+[[sources]]
+id = "sdis-40"
+name = "SDIS 40"
+type = "official_website"
+url = "https://www.sdis40.fr/"
+status = "candidate"
+usage_notes = "Public operational information for Landes."
+rate_limit_notes = "Use conservative polling; exact policy to validate."
+
+[[sources]]
+id = "meteo-france-vigilance"
+name = "Meteo-France vigilance"
+type = "weather"
+url = "https://vigilance.meteofrance.fr/"
+status = "candidate"
+usage_notes = "Weather and vigilance context."
+rate_limit_notes = "Prefer documented public endpoints when available."
+
+[[sources]]
+id = "vigicrues"
+name = "Vigicrues"
+type = "api"
+url = "https://www.vigicrues.gouv.fr/"
+status = "optional"
+usage_notes = "Contextual hydrological risks."
+rate_limit_notes = "Optional source; validate API usage before automation."
+
+[[sources]]
+id = "actu-fr-gironde"
+name = "Actu.fr Gironde"
+type = "news"
+url = "https://actu.fr/nouvelle-aquitaine/gironde_33/"
+status = "candidate"
+usage_notes = "Local news articles for Gironde."
+rate_limit_notes = "Validate terms and robots.txt before scraping."
+
+[[sources]]
+id = "actu-fr-landes"
+name = "Actu.fr Landes"
+type = "news"
+url = "https://actu.fr/nouvelle-aquitaine/landes_40/"
+status = "candidate"
+usage_notes = "Local news articles for Landes."
+rate_limit_notes = "Validate terms and robots.txt before scraping."
+
+[[sources]]
+id = "france-bleu-gironde"
+name = "France Bleu Gironde"
+type = "news"
+url = "https://www.francebleu.fr/gironde"
+status = "candidate"
+usage_notes = "Local news articles for Gironde."
+rate_limit_notes = "Validate terms and robots.txt before scraping."
+
+[[sources]]
+id = "france-bleu-gascogne"
+name = "France Bleu Gascogne"
+type = "news"
+url = "https://www.francebleu.fr/gascogne"
+status = "candidate"
+usage_notes = "Local news articles for Landes."
+rate_limit_notes = "Validate terms and robots.txt before scraping."
+
+[[sources]]
+id = "sud-ouest-gironde"
+name = "Sud Ouest Gironde"
+type = "news"
+url = "https://www.sudouest.fr/gironde/"
+status = "candidate"
+usage_notes = "Local news articles for Gironde."
+rate_limit_notes = "Validate terms and robots.txt before scraping."
+
+[[sources]]
+id = "sud-ouest-landes"
+name = "Sud Ouest Landes"
+type = "news"
+url = "https://www.sudouest.fr/landes/"
+status = "candidate"
+usage_notes = "Local news articles for Landes."
+rate_limit_notes = "Validate terms and robots.txt before scraping."
