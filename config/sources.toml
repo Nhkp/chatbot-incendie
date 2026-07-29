@@ -62,6 +62,15 @@ usage_notes = "Official wildfire danger prevention archive; source attribution r
 rate_limit_notes = "Current-year archive is updated daily during fire season; download conservatively."
 
 [[sources]]
+id = "meteo-des-forets-realtime"
+name = "Meteo-France Meteo des forets realtime"
+type = "api"
+url = "https://public-api.meteofrance.fr/public/DPMeteoForets/v1"
+status = "candidate"
+usage_notes = "Official real-time wildfire danger prevention API; requires API key."
+rate_limit_notes = "Portal catalog indicates 50 requests per minute; verify in account before automation."
+
+[[sources]]
 id = "vigicrues"
 name = "Vigicrues"
 type = "api"

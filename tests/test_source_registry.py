@@ -9,7 +9,7 @@ from chatbot_incendie.source_registry import get_source_by_id, load_sources
 def test_load_sources_reads_project_registry() -> None:
     sources = load_sources(Path("config/sources.toml"))
 
-    assert len(sources) == 14
+    assert len(sources) == 15
     assert sources[0].id == "data-gouv-fr"
     assert sources[0].type == SourceType.OPEN_DATA
     assert sources[0].status == SourceStatus.CANDIDATE
