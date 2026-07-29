@@ -17,7 +17,7 @@ Build only the domain/data models and the source registry.
 3. Source connectors for approved API-first sources. First connector done.
 4. Cleaning, deduplication, and metadata normalization. Done for v1.
 5. Chunking strategy and deterministic chunk tests. First deterministic chunker done.
-6. Embedding interface and local embedding model selection.
+6. Embedding interface and local embedding model selection. Interface done; real local model wiring next.
 7. Milvus storage and retrieval client.
 8. Retrieval scoring and citation assembly.
 9. Small open LLM interface and prompt contract.
