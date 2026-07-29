@@ -68,6 +68,15 @@ uv run uvicorn chatbot_incendie.api:app --host 0.0.0.0 --port 8001
 uv run streamlit run apps/streamlit_app.py
 ```
 
+Or run the full local demo with one command:
+
+```bash
+make demo
+```
+
+This loads `.env`, starts Milvus if possible, fetches Météo-France data, indexes it,
+starts FastAPI, then opens the Streamlit app.
+
 ## Documentation
 
 - `docs/project-brief.md`: objective and v1 scope.
