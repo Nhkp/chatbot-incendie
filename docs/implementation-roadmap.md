@@ -19,9 +19,9 @@ Build only the domain/data models and the source registry.
 5. Chunking strategy and deterministic chunk tests. First deterministic chunker done.
 6. Embedding interface and local embedding model selection. Done.
 7. Milvus storage and retrieval client. Done for v1.
-8. Retrieval scoring and citation assembly.
-9. Small open LLM interface and prompt contract.
-10. Streamlit interface with answer, citations, and freshness metadata.
+8. Retrieval scoring and citation assembly. Minimal Milvus citations done.
+9. Small open LLM interface and prompt contract. Minimal local generator done.
+10. Streamlit interface with answer, citations, and freshness metadata. Minimal chat UI done.
 11. Airflow DAG that orchestrates the already-tested ingestion pipeline hourly.
 
 ## Implementation rules

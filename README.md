@@ -7,9 +7,8 @@
 
 RAG chatbot specialized in questions about wildfires in Gironde and Landes, France, in 2026.
 
-The first project step sets up the workspace: agent conventions, code quality, CI,
-local hooks, and baseline documentation. The RAG application, Airflow ingestion,
-Milvus, and Streamlit interface will be added later.
+The project currently supports API-first ingestion, cleaning, chunking, local
+embeddings, Milvus indexing, and a minimal FastAPI + Streamlit chat loop.
 
 ## Getting started
 
@@ -60,6 +59,13 @@ Start Milvus and index the same JSONL file:
 ```bash
 docker compose up -d
 uv run python scripts/index_meteo_des_forets_milvus.py data/raw/2026-07-29/meteo-des-forets-realtime.jsonl
+```
+
+Start the local chat API and Streamlit interface:
+
+```bash
+uv run uvicorn chatbot_incendie.api:app --host 0.0.0.0 --port 8001
+uv run streamlit run apps/streamlit_app.py
 ```
 
 ## Documentation

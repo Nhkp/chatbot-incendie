@@ -28,5 +28,20 @@ uv run python scripts/index_meteo_des_forets_milvus.py data/raw/2026-07-29/meteo
 ## Planned services
 
 - Airflow for hourly ingestion orchestration.
-- Streamlit for the v1 interface.
 - Optional object storage for raw documents and artifacts.
+
+## Web chat
+
+Start the API:
+
+```bash
+uv run uvicorn chatbot_incendie.api:app --host 0.0.0.0 --port 8001
+```
+
+Start the Streamlit UI in another terminal:
+
+```bash
+uv run streamlit run apps/streamlit_app.py
+```
+
+The Streamlit app calls `CHATBOT_API_URL`, defaulting to `http://localhost:8001`.
