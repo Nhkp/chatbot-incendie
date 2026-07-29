@@ -11,7 +11,11 @@ from chatbot_incendie.chunking import Chunk, chunk_documents
 from chatbot_incendie.cleaning import clean_and_deduplicate
 from chatbot_incendie.connectors import parse_meteo_des_forets_archive
 from chatbot_incendie.domain import Source, SourceStatus, SourceType
-from chatbot_incendie.embeddings import embed_chunks
+from chatbot_incendie.embeddings import (
+    DEFAULT_EMBEDDING_MODEL,
+    SentenceTransformerEmbeddingModel,
+    embed_chunks,
+)
 
 
 @dataclass(frozen=True)
@@ -27,6 +31,21 @@ class StaticEmbeddingModel:
     vectors: list[list[float]]
 
     def embed_texts(self, texts: Sequence[str]) -> list[list[float]]:
+        return self.vectors
+
+
+@dataclass
+class FakeSentenceTransformerBackend:
+    vectors: list[list[float]]
+    calls: list[tuple[list[str], bool]]
+
+    def encode_document(
+        self,
+        sentences: Sequence[str],
+        *,
+        normalize_embeddings: bool,
+    ) -> list[list[float]]:
+        self.calls.append((list(sentences), normalize_embeddings))
         return self.vectors
 
 
@@ -102,6 +121,25 @@ def test_meteo_des_forets_documents_flow_through_embeddings() -> None:
         "meteo-des-forets-archive",
     ]
     assert [len(chunk.vector) for chunk in embedded] == [4, 4]
+
+
+def test_sentence_transformer_embedding_model_uses_document_encoding() -> None:
+    backend = FakeSentenceTransformerBackend(vectors=[[1, 2], [3, 4]], calls=[])
+    model = SentenceTransformerEmbeddingModel(backend=backend)
+
+    vectors = model.embed_texts(["passage a", "passage b"])
+
+    assert vectors == [[1.0, 2.0], [3.0, 4.0]]
+    assert backend.calls == [(["passage a", "passage b"], True)]
+    assert model.model_name == DEFAULT_EMBEDDING_MODEL
+
+
+def test_sentence_transformer_embedding_model_can_disable_normalization() -> None:
+    backend = FakeSentenceTransformerBackend(vectors=[[1.0]], calls=[])
+    model = SentenceTransformerEmbeddingModel(backend=backend, normalize_embeddings=False)
+
+    assert model.embed_texts(["passage"]) == [[1.0]]
+    assert backend.calls == [(["passage"], False)]
 
 
 def _vector_from_text(text: str, dimensions: int) -> list[float]:
