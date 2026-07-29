@@ -39,6 +39,22 @@ make hooks
 This installs both `pre-commit` and `commit-msg` hooks. Commit messages must follow
 Conventional Commits.
 
+## Local data smoke tests
+
+Fetch the current Météo-France wildfire danger data after setting `METEO_FRANCE_API_KEY`
+in the environment:
+
+```bash
+uv run python scripts/run_meteo_des_forets_realtime.py
+```
+
+Embed a generated JSONL file locally. This downloads the configured embedding model on
+first run:
+
+```bash
+uv run python scripts/run_local_embedding_smoke.py data/raw/2026-07-29/meteo-des-forets-realtime.jsonl
+```
+
 ## Documentation
 
 - `docs/project-brief.md`: objective and v1 scope.
