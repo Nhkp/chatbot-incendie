@@ -9,7 +9,9 @@ from pydantic import BaseModel, Field
 
 from chatbot_incendie.llm import DEFAULT_LLM_MODEL
 from chatbot_incendie.milvus_store import DEFAULT_MILVUS_COLLECTION, DEFAULT_MILVUS_URI
-from chatbot_incendie.rag import ChatAnswer, build_default_rag_service
+from chatbot_incendie.rag import ChatAnswer, ResponseMode, build_default_rag_service
+
+DEFAULT_LLM_MAX_NEW_TOKENS = 80
 
 
 class ChatService(Protocol):
@@ -81,7 +83,16 @@ def _default_service() -> ChatService:
         milvus_uri=os.environ.get("MILVUS_URI", DEFAULT_MILVUS_URI),
         collection_name=os.environ.get("MILVUS_COLLECTION", DEFAULT_MILVUS_COLLECTION),
         llm_model_name=os.environ.get("LLM_MODEL_NAME", DEFAULT_LLM_MODEL),
+        llm_max_new_tokens=_env_int("LLM_MAX_NEW_TOKENS", DEFAULT_LLM_MAX_NEW_TOKENS),
+        response_mode=ResponseMode(os.environ.get("RAG_RESPONSE_MODE", ResponseMode.EXTRACTIVE)),
     )
 
 
 app = create_app()
+
+
+def _env_int(name: str, default: int) -> int:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return int(value)

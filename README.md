@@ -77,6 +77,19 @@ make demo
 This loads `.env`, starts Milvus if possible, fetches Météo-France data, indexes it,
 starts FastAPI, then opens the Streamlit app.
 
+The demo uses fast extractive answers by default:
+
+```env
+RAG_RESPONSE_MODE=extractive
+```
+
+To use the local LLM instead, set:
+
+```env
+RAG_RESPONSE_MODE=llm
+LLM_MAX_NEW_TOKENS=80
+```
+
 ## Documentation
 
 - `docs/project-brief.md`: objective and v1 scope.

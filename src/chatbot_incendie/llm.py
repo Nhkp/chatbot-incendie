@@ -21,6 +21,7 @@ class _TextGenerationBackend(Protocol):
         max_new_tokens: int,
         do_sample: bool,
         return_full_text: bool,
+        clean_up_tokenization_spaces: bool,
     ) -> object: ...
 
 
@@ -43,6 +44,7 @@ class LocalTransformersGenerator:
             max_new_tokens=self.max_new_tokens,
             do_sample=False,
             return_full_text=False,
+            clean_up_tokenization_spaces=False,
         )
         return _generated_text(outputs).strip()
 

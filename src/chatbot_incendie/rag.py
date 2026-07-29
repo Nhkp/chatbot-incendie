@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from enum import StrEnum
 
 from chatbot_incendie.embeddings import EmbeddingModel, SentenceTransformerEmbeddingModel
 from chatbot_incendie.llm import DEFAULT_LLM_MODEL, LocalTransformersGenerator, TextGenerator
@@ -19,9 +20,15 @@ SAFE_UNKNOWN_ANSWER = (
     "Consultez les sources officielles locales, la préfecture, la mairie ou les services "
     "de secours en cas de danger immédiat."
 )
+EXTRACTIVE_MODEL_NAME = "extractive"
 
 
 SearchFunction = Callable[[MilvusConfig, list[list[float]], int], list[MilvusSearchResult]]
+
+
+class ResponseMode(StrEnum):
+    EXTRACTIVE = "extractive"
+    LLM = "llm"
 
 
 @dataclass(frozen=True)
@@ -71,6 +78,14 @@ class RagService:
                 model_name=self.generator.model_name,
             )
 
+        if isinstance(self.generator, ExtractiveGenerator):
+            return ChatAnswer(
+                answer=build_extractive_answer(results),
+                citations=citations,
+                retrieved_count=len(results),
+                model_name=self.generator.model_name,
+            )
+
         prompt = build_prompt(question, results)
         answer = self.generator.generate(prompt).strip() or SAFE_UNKNOWN_ANSWER
         return ChatAnswer(
@@ -86,16 +101,40 @@ def build_default_rag_service(
     milvus_uri: str = DEFAULT_MILVUS_URI,
     collection_name: str = DEFAULT_MILVUS_COLLECTION,
     llm_model_name: str = DEFAULT_LLM_MODEL,
+    llm_max_new_tokens: int = 220,
+    response_mode: ResponseMode = ResponseMode.EXTRACTIVE,
 ) -> RagService:
     return RagService(
         embedder=SentenceTransformerEmbeddingModel(),
-        generator=LocalTransformersGenerator(model_name=llm_model_name),
+        generator=_build_generator(response_mode, llm_model_name, llm_max_new_tokens),
         milvus_config=MilvusConfig(
             uri=milvus_uri,
             collection_name=collection_name,
             vector_dimension=DEFAULT_VECTOR_DIMENSION,
         ),
     )
+
+
+@dataclass(frozen=True)
+class ExtractiveGenerator:
+    model_name: str = EXTRACTIVE_MODEL_NAME
+
+    def generate(self, prompt: str) -> str:
+        return prompt
+
+
+def build_extractive_answer(results: list[MilvusSearchResult]) -> str:
+    if not results:
+        return SAFE_UNKNOWN_ANSWER
+
+    lines = [
+        "Voici les informations trouvées dans les sources indexées. "
+        "Elles ne remplacent pas les consignes de la mairie, de la préfecture ou des secours."
+    ]
+    for index, result in enumerate(results, 1):
+        title = result.title or result.source_id
+        lines.append(f"[{index}] {title}: {result.content}")
+    return "\n\n".join(lines)
 
 
 def build_prompt(question: str, results: list[MilvusSearchResult]) -> str:
@@ -135,4 +174,19 @@ def _citation_from_result(result: MilvusSearchResult) -> Citation:
         score=result.score,
         published_at=result.published_at,
         collected_at=result.collected_at,
+    )
+
+
+def _build_generator(
+    response_mode: ResponseMode,
+    llm_model_name: str,
+    llm_max_new_tokens: int,
+) -> TextGenerator:
+    if response_mode == ResponseMode.EXTRACTIVE:
+        return ExtractiveGenerator()
+    if llm_max_new_tokens <= 0:
+        raise ValueError("llm_max_new_tokens must be greater than 0")
+    return LocalTransformersGenerator(
+        model_name=llm_model_name,
+        max_new_tokens=llm_max_new_tokens,
     )

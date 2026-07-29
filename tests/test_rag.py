@@ -5,7 +5,14 @@ from dataclasses import dataclass
 
 from chatbot_incendie.llm import TextGenerator
 from chatbot_incendie.milvus_store import MilvusConfig, MilvusSearchResult
-from chatbot_incendie.rag import SAFE_UNKNOWN_ANSWER, RagService, build_prompt
+from chatbot_incendie.rag import (
+    SAFE_UNKNOWN_ANSWER,
+    ExtractiveGenerator,
+    RagService,
+    ResponseMode,
+    build_default_rag_service,
+    build_prompt,
+)
 
 
 @dataclass(frozen=True)
@@ -45,6 +52,23 @@ def test_rag_service_returns_answer_and_citations() -> None:
     assert "Quel est le risque en Gironde ?" in prompts[0]
 
 
+def test_rag_service_can_return_extractive_answer_without_llm_prompt() -> None:
+    prompts: list[str] = []
+    service = RagService(
+        embedder=FakeEmbedder([0.1, 0.2]),
+        generator=ExtractiveGenerator(),
+        milvus_config=MilvusConfig(vector_dimension=2),
+        search=_fake_search,
+    )
+
+    answer = service.answer_question("Quel est le risque en Gironde ?", top_k=1)
+
+    assert "Danger feu de foret J+1: niveau 3" in answer.answer
+    assert "ne remplacent pas les consignes" in answer.answer
+    assert answer.model_name == "extractive"
+    assert prompts == []
+
+
 def test_rag_service_returns_safe_unknown_without_context() -> None:
     service = RagService(
         embedder=FakeEmbedder([0.1, 0.2]),
@@ -68,6 +92,12 @@ def test_build_prompt_constrains_answer_to_context_and_safety() -> None:
     assert "Ne remplace jamais les consignes" in prompt
     assert "services officiels" in prompt
     assert "J'habite à Audenge" in prompt
+
+
+def test_build_default_rag_service_uses_extractive_mode_without_llm() -> None:
+    service = build_default_rag_service(response_mode=ResponseMode.EXTRACTIVE)
+
+    assert isinstance(service.generator, ExtractiveGenerator)
 
 
 def _fake_search(

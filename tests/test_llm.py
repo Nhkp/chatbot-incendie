@@ -17,6 +17,7 @@ class FakeTextGenerationBackend:
         max_new_tokens: int,
         do_sample: bool,
         return_full_text: bool,
+        clean_up_tokenization_spaces: bool,
     ) -> object:
         self.calls.append(
             {
@@ -24,6 +25,7 @@ class FakeTextGenerationBackend:
                 "max_new_tokens": max_new_tokens,
                 "do_sample": do_sample,
                 "return_full_text": return_full_text,
+                "clean_up_tokenization_spaces": clean_up_tokenization_spaces,
             }
         )
         return [{"generated_text": self.generated_text}]
@@ -47,6 +49,7 @@ def test_local_transformers_generator_uses_backend_without_sampling() -> None:
             "max_new_tokens": 42,
             "do_sample": False,
             "return_full_text": False,
+            "clean_up_tokenization_spaces": False,
         }
     ]
 
@@ -60,6 +63,7 @@ def test_local_transformers_generator_returns_empty_text_for_unexpected_output()
             max_new_tokens: int,
             do_sample: bool,
             return_full_text: bool,
+            clean_up_tokenization_spaces: bool,
         ) -> object:
             return []
 
