@@ -53,6 +53,15 @@ usage_notes = "Weather and vigilance context."
 rate_limit_notes = "Prefer documented public endpoints when available."
 
 [[sources]]
+id = "meteo-des-forets-archive"
+name = "Meteo-France Meteo des forets archive"
+type = "open_data"
+url = "https://www.data.gouv.fr/datasets/archives-de-la-meteo-des-forets"
+status = "approved"
+usage_notes = "Official wildfire danger prevention archive; source attribution required."
+rate_limit_notes = "Current-year archive is updated daily during fire season; download conservatively."
+
+[[sources]]
 id = "vigicrues"
 name = "Vigicrues"
 type = "api"

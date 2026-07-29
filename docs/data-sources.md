@@ -11,6 +11,7 @@ its legal and technical status is clear.
 | SDIS 33 | Official website / releases | Public operational information | To validate |
 | SDIS 40 | Official website / releases | Public operational information | To validate |
 | Meteo-France vigilance | Public data / API | Weather and vigilance context | To validate |
+| Meteo-France Météo des forêts archive | Open data / CSV | Wildfire danger prevention context | Approved for offline connector |
 | Vigicrues | Public API | Contextual hydrological risks | Optional |
 | Actu.fr Gironde | Web news | Local articles | To validate |
 | Actu.fr Landes | Web news | Local articles | To validate |
