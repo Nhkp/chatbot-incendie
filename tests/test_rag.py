@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date
 
 from chatbot_incendie.llm import TextGenerator
 from chatbot_incendie.milvus_store import MilvusConfig, MilvusSearchResult
@@ -41,6 +42,7 @@ def test_rag_service_returns_answer_and_citations() -> None:
         generator=FakeGenerator(prompts=prompts),
         milvus_config=MilvusConfig(vector_dimension=2),
         search=_fake_search,
+        current_date=date(2026, 7, 30),
     )
 
     answer = service.answer_question("Quel est le risque en Gironde ?", top_k=1)
@@ -50,6 +52,8 @@ def test_rag_service_returns_answer_and_citations() -> None:
     assert answer.model_name == "fake-llm"
     assert answer.citations[0].source_id == "meteo-des-forets-realtime"
     assert "Quel est le risque en Gironde ?" in prompts[0]
+    assert "Date actuelle: 2026-07-30" in prompts[0]
+    assert "privilégier les sources les plus récentes" in prompts[0]
 
 
 def test_rag_service_can_return_extractive_answer_without_llm_prompt() -> None:
@@ -59,11 +63,13 @@ def test_rag_service_can_return_extractive_answer_without_llm_prompt() -> None:
         generator=ExtractiveGenerator(),
         milvus_config=MilvusConfig(vector_dimension=2),
         search=_fake_search,
+        current_date=date(2026, 7, 30),
     )
 
     answer = service.answer_question("Quel est le risque en Gironde ?", top_k=1)
 
     assert "Danger feu de foret J+1: niveau 3" in answer.answer
+    assert "Date actuelle: 2026-07-30" in answer.answer
     assert "ne remplacent pas les consignes" in answer.answer
     assert answer.model_name == "extractive"
     assert prompts == []
@@ -85,9 +91,14 @@ def test_rag_service_returns_safe_unknown_without_context() -> None:
 
 
 def test_build_prompt_constrains_answer_to_context_and_safety() -> None:
-    prompt = build_prompt("J'habite à Audenge, puis-je rentrer chez moi ?", [_result()])
+    prompt = build_prompt(
+        "J'habite à Audenge, puis-je rentrer chez moi ?",
+        [_result()],
+        current_date=date(2026, 7, 30),
+    )
 
     assert "Réponds en français" in prompt
+    assert "Date actuelle: 2026-07-30" in prompt
     assert "uniquement avec le contexte fourni" in prompt
     assert "Ne remplace jamais les consignes" in prompt
     assert "services officiels" in prompt

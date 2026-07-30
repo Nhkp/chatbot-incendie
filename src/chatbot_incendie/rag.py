@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date
 from enum import StrEnum
 
 from chatbot_incendie.embeddings import EmbeddingModel, SentenceTransformerEmbeddingModel
@@ -56,6 +57,7 @@ class RagService:
     generator: TextGenerator
     milvus_config: MilvusConfig
     search: SearchFunction = search_vectors
+    current_date: date | None = None
 
     def answer_question(self, question: str, top_k: int = 5) -> ChatAnswer:
         question = question.strip()
@@ -80,13 +82,13 @@ class RagService:
 
         if isinstance(self.generator, ExtractiveGenerator):
             return ChatAnswer(
-                answer=build_extractive_answer(results),
+                answer=_build_extractive_answer(results, current_date=_service_date(self)),
                 citations=citations,
                 retrieved_count=len(results),
                 model_name=self.generator.model_name,
             )
 
-        prompt = build_prompt(question, results)
+        prompt = build_prompt(question, results, current_date=_service_date(self))
         answer = self.generator.generate(prompt).strip() or SAFE_UNKNOWN_ANSWER
         return ChatAnswer(
             answer=answer,
@@ -124,10 +126,19 @@ class ExtractiveGenerator:
 
 
 def build_extractive_answer(results: list[MilvusSearchResult]) -> str:
+    return _build_extractive_answer(results, current_date=date.today())
+
+
+def _build_extractive_answer(
+    results: list[MilvusSearchResult],
+    *,
+    current_date: date,
+) -> str:
     if not results:
         return SAFE_UNKNOWN_ANSWER
 
     lines = [
+        f"Date actuelle: {current_date.isoformat()}.\n"
         "Voici les informations trouvées dans les sources indexées. "
         "Elles ne remplacent pas les consignes de la mairie, de la préfecture ou des secours."
     ]
@@ -137,11 +148,18 @@ def build_extractive_answer(results: list[MilvusSearchResult]) -> str:
     return "\n\n".join(lines)
 
 
-def build_prompt(question: str, results: list[MilvusSearchResult]) -> str:
+def build_prompt(
+    question: str,
+    results: list[MilvusSearchResult],
+    current_date: date | None = None,
+) -> str:
+    today = current_date or date.today()
     context = "\n\n".join(_context_line(index, result) for index, result in enumerate(results, 1))
     return (
         "Tu es un assistant RAG sur les incendies et le risque feu de forêt en Gironde "
         "et dans les Landes en 2026.\n"
+        f"Date actuelle: {today.isoformat()}.\n"
+        "Utilise cette date pour privilégier les sources les plus récentes du contexte.\n"
         "Réponds en français, uniquement avec le contexte fourni.\n"
         "Cite les sources avec les numéros [1], [2], etc.\n"
         "Si le contexte ne suffit pas, dis clairement que tu ne sais pas.\n"
@@ -175,6 +193,10 @@ def _citation_from_result(result: MilvusSearchResult) -> Citation:
         published_at=result.published_at,
         collected_at=result.collected_at,
     )
+
+
+def _service_date(service: RagService) -> date:
+    return service.current_date or date.today()
 
 
 def _build_generator(
