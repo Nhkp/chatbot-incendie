@@ -30,8 +30,7 @@ demo:
 demo-data:
 	set -a; [ ! -f .env ] || . ./.env; set +a; \
 	docker compose up -d || true; \
-	uv run python scripts/run_meteo_des_forets_realtime.py; \
-	uv run python scripts/index_meteo_des_forets_milvus.py data/raw/$$(date +%F)/meteo-des-forets-realtime.jsonl
+	uv run python scripts/populate_sources.py
 
 populate-sources:
 	uv run python scripts/populate_sources.py

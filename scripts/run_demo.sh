@@ -6,8 +6,6 @@ cd "$ROOT_DIR"
 
 API_HOST="${API_HOST:-0.0.0.0}"
 API_PORT="${API_PORT:-8001}"
-TODAY="$(date +%F)"
-RAW_JSONL="data/raw/${TODAY}/meteo-des-forets-realtime.jsonl"
 API_PID=""
 
 cleanup() {
@@ -25,26 +23,13 @@ if [[ -f .env ]]; then
   set +a
 fi
 
-if [[ -z "${METEO_FRANCE_API_KEY:-}" ]]; then
-  echo "Missing METEO_FRANCE_API_KEY. Add it to .env before running the demo."
-  exit 2
-fi
-
 echo "Starting Milvus if needed..."
 if ! docker compose up -d; then
   echo "docker compose up failed. If port 19530 is already used by another Milvus, reusing it."
 fi
 
-echo "Fetching Météo-France data..."
-uv run python scripts/run_meteo_des_forets_realtime.py
-
-if [[ ! -f "${RAW_JSONL}" ]]; then
-  echo "Expected raw JSONL was not created: ${RAW_JSONL}"
-  exit 2
-fi
-
-echo "Indexing data into Milvus..."
-uv run python scripts/index_meteo_des_forets_milvus.py "${RAW_JSONL}"
+echo "Fetching and indexing all implemented sources into Milvus..."
+uv run python scripts/populate_sources.py
 
 echo "Starting FastAPI on http://localhost:${API_PORT}..."
 uv run uvicorn chatbot_incendie.api:app --host "${API_HOST}" --port "${API_PORT}" &

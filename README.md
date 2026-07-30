@@ -90,8 +90,8 @@ Or run the full local demo with one command:
 make demo
 ```
 
-This loads `.env`, starts Milvus if possible, fetches Météo-France data, indexes it,
-starts FastAPI, then opens the Streamlit app.
+This loads `.env`, starts Milvus if possible, fetches and indexes all implemented
+sources, starts FastAPI, then opens the Streamlit app.
 
 The demo uses fast extractive answers by default:
 
