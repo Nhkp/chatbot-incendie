@@ -2,16 +2,20 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import subprocess
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
+from html import unescape
 from http.client import RemoteDisconnected
 from io import StringIO
 from typing import Any, Protocol, cast
 from urllib.error import URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+from xml.etree import ElementTree
 
 from chatbot_incendie.domain import RawDocument, Source
 
@@ -37,6 +41,34 @@ DANGER_LABELS = {
     "4": "tres eleve",
 }
 NASA_FIRMS_REQUIRED_FIELDS = {"latitude", "longitude", "acq_date", "acq_time"}
+MEDIA_RELEVANCE_KEYWORDS = (
+    "gironde",
+    "landes",
+    "incendie",
+    "incendies",
+    "feu",
+    "feux",
+    "forêt",
+    "foret",
+    "évacuation",
+    "evacuation",
+    "évacué",
+    "evacue",
+    "pompier",
+    "pompiers",
+    "sécheresse",
+    "secheresse",
+    "fumée",
+    "fumee",
+    "canicule",
+    "lacanau",
+    "arcachon",
+    "andernos",
+    "audenge",
+    "biganos",
+    "mios",
+    "sanguinet",
+)
 
 
 class HttpClient(Protocol):
@@ -177,6 +209,21 @@ class GeorisquesConnector:
         return documents
 
 
+@dataclass(frozen=True)
+class MediaFeedConnector:
+    client: AuthenticatedHttpClient
+    feed_url: str
+    keywords: Sequence[str] = MEDIA_RELEVANCE_KEYWORDS
+
+    def fetch(self, source: Source) -> list[RawDocument]:
+        return parse_media_feed(
+            xml_text=self.client.get_text(self.feed_url, headers=_xml_headers()),
+            source=source,
+            feed_url=self.feed_url,
+            keywords=self.keywords,
+        )
+
+
 def parse_meteo_des_forets_archive(
     csv_text: str,
     source: Source,
@@ -303,6 +350,25 @@ def parse_georisques_report(
     ]
 
 
+def parse_media_feed(
+    xml_text: str,
+    source: Source,
+    feed_url: str,
+    keywords: Sequence[str] = MEDIA_RELEVANCE_KEYWORDS,
+) -> list[RawDocument]:
+    try:
+        root = ElementTree.fromstring(xml_text)
+    except ElementTree.ParseError as error:
+        raise ValueError("media feed response must be valid XML") from error
+
+    documents: list[RawDocument] = []
+    for entry in _media_feed_entries(root):
+        document = _media_document_from_entry(source, feed_url, entry)
+        if document is not None and _is_relevant_media_document(document, keywords):
+            documents.append(document)
+    return documents
+
+
 def _detect_delimiter(csv_text: str) -> str:
     header = csv_text.splitlines()[0] if csv_text.splitlines() else ""
     return ";" if header.count(";") > header.count(",") else ","
@@ -338,6 +404,13 @@ def _json_headers() -> dict[str, str]:
     }
 
 
+def _xml_headers() -> dict[str, str]:
+    return {
+        "Accept": "application/rss+xml,application/atom+xml,application/xml,text/xml,*/*;q=0.8",
+        "User-Agent": "chatbot-incendie/0.1",
+    }
+
+
 def _georisques_headers() -> dict[str, str]:
     return {
         "Accept": "application/json",
@@ -369,6 +442,124 @@ def _curl_get_text(url: str, headers: Mapping[str, str], timeout_seconds: float)
         timeout=timeout_seconds + 5,
     )
     return completed.stdout
+
+
+def _media_feed_entries(root: ElementTree.Element) -> list[ElementTree.Element]:
+    entry_names = {"item", "entry", "url"}
+    if _xml_name(root.tag) in entry_names:
+        return [root]
+    return [element for element in root.iter() if _xml_name(element.tag) in entry_names]
+
+
+def _media_document_from_entry(
+    source: Source,
+    feed_url: str,
+    entry: ElementTree.Element,
+) -> RawDocument | None:
+    title = _entry_title(entry)
+    link = _entry_link(entry)
+    if title is None or link is None:
+        return None
+
+    summary = _entry_summary(entry)
+    published_at = _entry_published_at(entry)
+    content_parts = [
+        f"Media source: {source.name}.",
+        f"Title: {title}.",
+    ]
+    if summary:
+        content_parts.append(f"Summary: {summary}.")
+    content_parts.append(
+        "Media context is not an official emergency instruction; "
+        "confirm safety actions with official sources."
+    )
+    return RawDocument(
+        source_id=source.id,
+        url=feed_url,
+        canonical_url=link,
+        title=title,
+        content=" ".join(content_parts),
+        published_at=published_at,
+    )
+
+
+def _entry_title(entry: ElementTree.Element) -> str | None:
+    return _clean_feed_text(_child_text(entry, "title") or _child_text(entry, "news:title"))
+
+
+def _entry_link(entry: ElementTree.Element) -> str | None:
+    link = _child_text(entry, "link") or _child_text(entry, "loc")
+    if link:
+        return _http_url_or_none(_clean_feed_text(link))
+    for child in entry:
+        if _xml_name(child.tag) == "link":
+            href = child.attrib.get("href")
+            if href:
+                return _http_url_or_none(_clean_feed_text(href))
+    return None
+
+
+def _entry_summary(entry: ElementTree.Element) -> str | None:
+    texts = [
+        _child_text(entry, "description"),
+        _child_text(entry, "summary"),
+        _child_text(entry, "content"),
+        _child_text(entry, "news:keywords"),
+        _child_text(entry, "image:caption"),
+    ]
+    return _clean_feed_text(" ".join(text for text in texts if text))
+
+
+def _entry_published_at(entry: ElementTree.Element) -> datetime | None:
+    value = _clean_feed_text(
+        _child_text(entry, "pubDate")
+        or _child_text(entry, "published")
+        or _child_text(entry, "updated")
+        or _child_text(entry, "lastmod")
+        or _child_text(entry, "news:publication_date")
+    )
+    if value is None:
+        return None
+    try:
+        return _parse_optional_datetime(value) or _parse_rfc2822_datetime(value)
+    except ValueError:
+        return _parse_rfc2822_datetime(value)
+
+
+def _parse_rfc2822_datetime(value: str) -> datetime | None:
+    try:
+        parsed = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+
+
+def _child_text(entry: ElementTree.Element, name: str) -> str | None:
+    target = name.rsplit(":", maxsplit=1)[-1]
+    for child in entry.iter():
+        if child is not entry and _xml_name(child.tag) == target and child.text:
+            return child.text
+    return None
+
+
+def _xml_name(tag: str) -> str:
+    return tag.rsplit("}", maxsplit=1)[-1]
+
+
+def _clean_feed_text(value: str | None) -> str | None:
+    if value is None:
+        return None
+    text = re.sub(r"<[^>]+>", " ", unescape(value))
+    normalized = re.sub(r"\s+", " ", text).strip()
+    return normalized or None
+
+
+def _is_relevant_media_document(document: RawDocument, keywords: Sequence[str]) -> bool:
+    content_without_source = re.sub(r"^Media source: .*?\. ", "", document.content)
+    haystack = " ".join(
+        part for part in (document.title, content_without_source) if part
+    ).casefold()
+    return any(keyword.casefold() in haystack for keyword in keywords)
 
 
 def _content_from_row(row: dict[str, str | None]) -> str:

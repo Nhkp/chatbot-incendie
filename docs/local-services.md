@@ -31,8 +31,9 @@ Populate all implemented real sources and index them in Milvus with:
 make populate-sources
 ```
 
-The command loads `.env`, continues if one source fails, and prints per-source raw,
-cleaned, chunk, and upsert counts.
+The command loads `.env`, fetches official/open-data sources and local media feed
+metadata, continues if one source fails, and prints per-source raw, cleaned, chunk,
+and upsert counts.
 
 Required keys:
 
@@ -44,6 +45,10 @@ Optional endpoint overrides:
 - `METEO_FRANCE_API_BASE_URL`
 - `METEO_FRANCE_VIGILANCE_API_BASE_URL`
 - `GEORISQUES_API_BASE_URL`
+
+Media feed metadata currently comes from France 3, Actu.fr, and ici/France Bleu.
+These media citations are contextual; official sources remain authoritative for
+safety-sensitive instructions.
 
 ## Planned services
 

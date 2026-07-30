@@ -22,14 +22,14 @@ its legal and technical status is clear.
 | Géorisques API | API | Commune-level risk and regulatory context | To validate |
 | BDIFF | Open data | Historical wildfire database | To validate |
 | Atmo Nouvelle-Aquitaine Open Data | Open data | Smoke and air-quality context | To validate |
-| Actu.fr Gironde | Web news | Local articles | To validate |
-| Actu.fr Landes | Web news | Local articles | To validate |
-| France Bleu Gironde | Web news | Local articles | To validate |
-| France Bleu Gascogne | Web news | Local articles | To validate |
-| France 3 Gironde | Web news | Local public-service articles | To validate |
-| France 3 Landes | Web news | Local public-service articles | To validate |
-| Sud Ouest Gironde | Web news | Local articles | To validate |
-| Sud Ouest Landes | Web news | Local articles | To validate |
+| Actu.fr Gironde | RSS metadata | Local articles | Feed connector implemented |
+| Actu.fr Landes | RSS metadata | Local articles | Feed connector implemented |
+| ici / France Bleu Gironde | News sitemap metadata | Local articles | Feed connector implemented |
+| ici / France Bleu Gascogne | News sitemap metadata | Local articles | Feed connector implemented |
+| France 3 Gironde | RSS metadata | Local public-service articles | Feed connector implemented |
+| France 3 Landes | RSS metadata | Local public-service articles | Feed connector implemented |
+| Sud Ouest Gironde | Web news | Local articles | Manual review only |
+| Sud Ouest Landes | Web news | Local articles | Manual review only |
 
 ## API keys
 
@@ -46,3 +46,15 @@ its legal and technical status is clear.
 - Respect rate limits.
 - Record the collection date and canonical URL.
 - Deduplicate by canonical URL and content fingerprint.
+- Treat media as contextual evidence only; official sources outrank media for evacuation,
+  return-home, road-closure, and emergency-instruction answers.
+
+## Reviewed media feed endpoints
+
+- France 3 Gironde RSS: `https://france3-regions.franceinfo.fr/nouvelle-aquitaine/gironde/rss`
+- France 3 Landes RSS: `https://france3-regions.franceinfo.fr/nouvelle-aquitaine/landes/rss`
+- Actu.fr Gironde RSS: `https://actu.fr/nouvelle-aquitaine/gironde_33/rss.xml`
+- Actu.fr Landes RSS: `https://actu.fr/nouvelle-aquitaine/landes_40/rss.xml`
+- ici / France Bleu news sitemap: `https://www.ici.fr/sitemap-news.xml`
+- Sud Ouest RSS paths showed redirect issues during review; keep out of automation until
+  access and terms are checked manually.

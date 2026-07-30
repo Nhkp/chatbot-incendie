@@ -68,10 +68,14 @@ make populate-sources
 ```
 
 This currently fetches Météo des forêts, Météo-France Vigilance, NASA FIRMS, and
-Géorisques. Required API keys:
+Géorisques, plus local media feed metadata from France 3, Actu.fr, and ici/France Bleu.
+Required API keys:
 
 - `METEO_FRANCE_API_KEY` for Météo-France APIs.
 - `NASA_FIRMS_MAP_KEY` for NASA FIRMS.
+
+Media feeds are contextual evidence only. For evacuation, return-home, road-closure, or
+emergency-instruction answers, official sources must outrank media citations.
 
 Start the local chat API and Streamlit interface:
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -13,6 +13,7 @@ from chatbot_incendie.connectors import (
     METEO_DES_FORETS_API_BASE_URL,
     METEO_FRANCE_VIGILANCE_API_BASE_URL,
     GeorisquesConnector,
+    MediaFeedConnector,
     MeteoDesForetsRealtimeConnector,
     MeteoFranceVigilanceConnector,
     NasaFirmsAreaConnector,
@@ -41,7 +42,28 @@ SOURCE_IDS = (
     "nasa-firms-area-api",
     "meteo-france-vigilance-api",
     "georisques-api",
+    "france-3-gironde",
+    "france-3-landes",
+    "actu-fr-gironde",
+    "actu-fr-landes",
+    "france-bleu-gironde",
+    "france-bleu-gascogne",
 )
+LANDES_MEDIA_KEYWORDS = ("landes", "morcenx", "rions-des-landes", "sanguinet", "mimizan")
+MEDIA_FEED_CONFIGS = {
+    "france-3-gironde": (
+        "https://france3-regions.franceinfo.fr/nouvelle-aquitaine/gironde/rss",
+        None,
+    ),
+    "france-3-landes": (
+        "https://france3-regions.franceinfo.fr/nouvelle-aquitaine/landes/rss",
+        None,
+    ),
+    "actu-fr-gironde": ("https://actu.fr/nouvelle-aquitaine/gironde_33/rss.xml", None),
+    "actu-fr-landes": ("https://actu.fr/nouvelle-aquitaine/landes_40/rss.xml", None),
+    "france-bleu-gironde": ("https://www.ici.fr/sitemap-news.xml", None),
+    "france-bleu-gascogne": ("https://www.ici.fr/sitemap-news.xml", LANDES_MEDIA_KEYWORDS),
+}
 
 
 @dataclass(frozen=True)
@@ -148,7 +170,28 @@ def _connector_specs() -> list[ConnectorSpec]:
                 base_url=os.environ.get("GEORISQUES_API_BASE_URL", GEORISQUES_API_BASE_URL),
             ),
         ),
+        *[
+            ConnectorSpec(
+                source_id=source_id,
+                build=lambda client, feed_url=feed_url, keywords=keywords: _media_feed_connector(
+                    client,
+                    feed_url,
+                    keywords,
+                ),
+            )
+            for source_id, (feed_url, keywords) in MEDIA_FEED_CONFIGS.items()
+        ],
     ]
+
+
+def _media_feed_connector(
+    client: UrlopenTextClient,
+    feed_url: str,
+    keywords: Sequence[str] | None,
+) -> MediaFeedConnector:
+    if keywords is None:
+        return MediaFeedConnector(client=client, feed_url=feed_url)
+    return MediaFeedConnector(client=client, feed_url=feed_url, keywords=keywords)
 
 
 def _load_dotenv(path: Path) -> None:

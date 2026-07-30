@@ -9,10 +9,12 @@ from chatbot_incendie.chunking import chunk_documents
 from chatbot_incendie.cleaning import clean_and_deduplicate
 from chatbot_incendie.connectors import (
     GeorisquesConnector,
+    MediaFeedConnector,
     MeteoDesForetsArchiveConnector,
     MeteoDesForetsRealtimeConnector,
     MeteoFranceVigilanceConnector,
     NasaFirmsAreaConnector,
+    parse_media_feed,
     parse_meteo_des_forets_archive,
 )
 from chatbot_incendie.domain import RawDocument, Source, SourceStatus, SourceType
@@ -336,6 +338,72 @@ def test_georisques_connector_skips_commune_network_failures() -> None:
     assert [document.title for document in documents] == ["Georisques BIGANOS (33051)"]
 
 
+def test_media_feed_connector_parses_relevant_rss_items() -> None:
+    source = _source_with_id("france-3-gironde")
+    feed_url = "https://example.com/gironde/rss"
+    connector = MediaFeedConnector(
+        client=FakeMappingAuthenticatedTextClient({feed_url: _rss_xml()}),
+        feed_url=feed_url,
+    )
+
+    documents = connector.fetch(source)
+
+    assert len(documents) == 1
+    assert documents[0].title == "Incendie en Gironde : les pompiers restent mobilisés"
+    assert documents[0].canonical_url == "https://example.com/articles/incendie-gironde"
+    assert "Media context is not an official emergency instruction" in documents[0].content
+    assert documents[0].published_at == datetime(2026, 7, 30, 12, 0, tzinfo=UTC)
+
+
+def test_media_feed_connector_parses_news_sitemap_items() -> None:
+    source = _source_with_id("france-bleu-gironde")
+    documents = parse_media_feed(
+        _news_sitemap_xml(),
+        source=source,
+        feed_url="https://example.com/sitemap-news.xml",
+    )
+
+    assert len(documents) == 1
+    assert documents[0].title == "Incendie en Gironde : appel aux dons"
+    assert documents[0].published_at == datetime(2026, 7, 30, 15, 16, 17, tzinfo=UTC)
+    assert "Incendie, Solidarité" in documents[0].content
+
+
+def test_media_feed_connector_filters_irrelevant_items() -> None:
+    documents = parse_media_feed(
+        _irrelevant_rss_xml(),
+        source=_source_with_id("actu-fr-gironde"),
+        feed_url="https://example.com/rss",
+    )
+
+    assert documents == []
+
+
+def test_media_feed_connector_does_not_match_location_url_alone() -> None:
+    documents = parse_media_feed(
+        _irrelevant_location_url_rss_xml(),
+        source=_source_with_id("france-3-gironde"),
+        feed_url="https://example.com/rss",
+    )
+
+    assert documents == []
+
+
+def test_media_feed_connector_rejects_malformed_xml() -> None:
+    with pytest.raises(ValueError, match="media feed response must be valid XML"):
+        parse_media_feed("[", _source_with_id("actu-fr-gironde"), "https://example.com/rss")
+
+
+def test_media_feed_connector_returns_empty_list_for_empty_feed() -> None:
+    documents = parse_media_feed(
+        "<rss><channel /></rss>",
+        source=_source_with_id("actu-fr-gironde"),
+        feed_url="https://example.com/rss",
+    )
+
+    assert documents == []
+
+
 def test_new_connectors_flow_through_cleaning_chunking_and_fake_embeddings() -> None:
     documents = [
         *_nasa_connector().fetch(_source_with_id("nasa-firms-area-api")),
@@ -354,6 +422,22 @@ def test_new_connectors_flow_through_cleaning_chunking_and_fake_embeddings() -> 
         "meteo-france-vigilance-api",
         "georisques-api",
     }
+
+
+def test_media_feed_flows_through_cleaning_chunking_and_fake_embeddings() -> None:
+    documents = parse_media_feed(
+        _rss_xml(),
+        source=_source_with_id("france-3-gironde"),
+        feed_url="https://example.com/rss",
+    )
+
+    cleaned = clean_and_deduplicate(documents)
+    chunks = chunk_documents(cleaned.documents, max_chars=300, overlap_chars=30)
+    embedded = embed_chunks(chunks, FakeEmbeddingModel())
+
+    assert cleaned.output_count == 1
+    assert len(embedded) == 1
+    assert embedded[0].source_id == "france-3-gironde"
 
 
 def _csv() -> str:
@@ -389,6 +473,71 @@ def _georisques_json() -> str:
         '"risquesNaturels":{"feuForet":{"present":true,"libelle":"Feu de foret"},'
         '"inondation":{"present":false,"libelle":"Inondation"}}}'
     )
+
+
+def _rss_xml() -> str:
+    return """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <item>
+      <title>Incendie en Gironde : les pompiers restent mobilisés</title>
+      <link>https://example.com/articles/incendie-gironde</link>
+      <description>Un article local sur un feu de forêt près du bassin d'Arcachon.</description>
+      <pubDate>Thu, 30 Jul 2026 12:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Festival de musique ce week-end</title>
+      <link>https://example.com/articles/festival</link>
+      <description>Agenda culturel.</description>
+      <pubDate>Thu, 30 Jul 2026 13:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>
+"""
+
+
+def _irrelevant_rss_xml() -> str:
+    return """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <item>
+      <title>Marché nocturne en centre-ville</title>
+      <link>https://example.com/articles/marche</link>
+      <description>Une sortie estivale.</description>
+    </item>
+  </channel>
+</rss>
+"""
+
+
+def _irrelevant_location_url_rss_xml() -> str:
+    return """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <item>
+      <title>Festival de musique ce week-end</title>
+      <link>https://example.com/nouvelle-aquitaine/gironde/festival</link>
+      <description>Agenda culturel.</description>
+    </item>
+  </channel>
+</rss>
+"""
+
+
+def _news_sitemap_xml() -> str:
+    return """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  <url>
+    <loc>https://example.com/incendie-gironde-dons</loc>
+    <news:news>
+      <news:publication_date>2026-07-30T15:16:17+00:00</news:publication_date>
+      <news:title>Incendie en Gironde : appel aux dons</news:title>
+      <news:keywords>Société, Incendie, Solidarité</news:keywords>
+    </news:news>
+  </url>
+</urlset>
+"""
 
 
 def _nasa_connector() -> NasaFirmsAreaConnector:
