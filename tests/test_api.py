@@ -3,8 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from fastapi.testclient import TestClient
+from pytest import MonkeyPatch
 
-from chatbot_incendie.api import create_app
+from chatbot_incendie.api import _env_float, _env_int, _llm_api_keys, create_app
 from chatbot_incendie.rag import SAFE_UNKNOWN_ANSWER, ChatAnswer, Citation
 
 
@@ -76,6 +77,16 @@ def test_chat_endpoint_returns_safe_unknown_without_citations() -> None:
     assert response.status_code == 200
     assert response.json()["answer"] == SAFE_UNKNOWN_ANSWER
     assert response.json()["citations"] == []
+
+
+def test_env_helpers_read_llm_provider_settings(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_MAX_NEW_TOKENS", "120")
+    monkeypatch.setenv("LLM_TEMPERATURE", "0.2")
+    monkeypatch.setenv("GEMINI_API_KEY", "gemini-key")
+
+    assert _env_int("LLM_MAX_NEW_TOKENS", 80) == 120
+    assert _env_float("LLM_TEMPERATURE", 0.0) == 0.2
+    assert _llm_api_keys()["GEMINI_API_KEY"] == "gemini-key"
 
 
 def _service() -> FakeChatService:

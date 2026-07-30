@@ -93,16 +93,33 @@ make demo
 This loads `.env`, starts Milvus if possible, fetches and indexes all implemented
 sources, starts FastAPI, then opens the Streamlit app.
 
-The demo uses fast extractive answers by default:
+The recommended cloud LLM profile uses Gemini's free-tier-friendly API:
+
+```env
+RAG_RESPONSE_MODE=llm
+LLM_PROVIDER=gemini
+LLM_MODEL_NAME=gemini-3.6-flash
+LLM_MAX_NEW_TOKENS=120
+LLM_TEMPERATURE=0
+GEMINI_API_KEY=your-key
+```
+
+To switch providers, change `LLM_PROVIDER`, `LLM_MODEL_NAME`, and the matching API key
+in `.env`. Supported providers are `local`, `gemini`, `mistral`, `deepseek`, `openai`,
+and `anthropic`.
+
+For fast no-LLM answers:
 
 ```env
 RAG_RESPONSE_MODE=extractive
 ```
 
-To use the local LLM instead, set:
+To use the local Qwen LLM instead:
 
 ```env
 RAG_RESPONSE_MODE=llm
+LLM_PROVIDER=local
+LLM_MODEL_NAME=Qwen/Qwen3-0.6B
 LLM_MAX_NEW_TOKENS=80
 ```
 

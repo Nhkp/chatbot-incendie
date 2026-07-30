@@ -6,7 +6,12 @@ from datetime import date
 from enum import StrEnum
 
 from chatbot_incendie.embeddings import EmbeddingModel, SentenceTransformerEmbeddingModel
-from chatbot_incendie.llm import DEFAULT_LLM_MODEL, LocalTransformersGenerator, TextGenerator
+from chatbot_incendie.llm import (
+    DEFAULT_LLM_MODEL,
+    LlmProvider,
+    TextGenerator,
+    build_llm_generator,
+)
 from chatbot_incendie.milvus_store import (
     DEFAULT_MILVUS_COLLECTION,
     DEFAULT_MILVUS_URI,
@@ -89,7 +94,10 @@ class RagService:
             )
 
         prompt = build_prompt(question, results, current_date=_service_date(self))
-        answer = self.generator.generate(prompt).strip() or SAFE_UNKNOWN_ANSWER
+        try:
+            answer = self.generator.generate(prompt).strip() or SAFE_UNKNOWN_ANSWER
+        except ValueError:
+            answer = SAFE_UNKNOWN_ANSWER
         return ChatAnswer(
             answer=answer,
             citations=citations,
@@ -104,11 +112,21 @@ def build_default_rag_service(
     collection_name: str = DEFAULT_MILVUS_COLLECTION,
     llm_model_name: str = DEFAULT_LLM_MODEL,
     llm_max_new_tokens: int = 220,
+    llm_provider: LlmProvider = LlmProvider.LOCAL,
+    llm_temperature: float = 0.0,
+    api_keys: dict[str, str] | None = None,
     response_mode: ResponseMode = ResponseMode.EXTRACTIVE,
 ) -> RagService:
     return RagService(
         embedder=SentenceTransformerEmbeddingModel(),
-        generator=_build_generator(response_mode, llm_model_name, llm_max_new_tokens),
+        generator=_build_generator(
+            response_mode=response_mode,
+            llm_provider=llm_provider,
+            llm_model_name=llm_model_name,
+            llm_max_new_tokens=llm_max_new_tokens,
+            llm_temperature=llm_temperature,
+            api_keys=api_keys or {},
+        ),
         milvus_config=MilvusConfig(
             uri=milvus_uri,
             collection_name=collection_name,
@@ -200,15 +218,20 @@ def _service_date(service: RagService) -> date:
 
 
 def _build_generator(
+    *,
     response_mode: ResponseMode,
+    llm_provider: LlmProvider,
     llm_model_name: str,
     llm_max_new_tokens: int,
+    llm_temperature: float,
+    api_keys: dict[str, str],
 ) -> TextGenerator:
     if response_mode == ResponseMode.EXTRACTIVE:
         return ExtractiveGenerator()
-    if llm_max_new_tokens <= 0:
-        raise ValueError("llm_max_new_tokens must be greater than 0")
-    return LocalTransformersGenerator(
+    return build_llm_generator(
+        provider=llm_provider,
         model_name=llm_model_name,
         max_new_tokens=llm_max_new_tokens,
+        temperature=llm_temperature,
+        api_keys=api_keys,
     )

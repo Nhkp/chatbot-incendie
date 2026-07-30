@@ -70,3 +70,27 @@ uv run streamlit run apps/streamlit_app.py
 ```
 
 The Streamlit app calls `CHATBOT_API_URL`, defaulting to `http://localhost:8001`.
+
+## LLM providers
+
+Cloud LLM generation is selected from `.env`:
+
+```env
+RAG_RESPONSE_MODE=llm
+LLM_PROVIDER=gemini
+LLM_MODEL_NAME=gemini-3.6-flash
+LLM_MAX_NEW_TOKENS=120
+LLM_TEMPERATURE=0
+GEMINI_API_KEY=your-key
+```
+
+Supported `LLM_PROVIDER` values are `local`, `gemini`, `mistral`, `deepseek`,
+`openai`, and `anthropic`. Set only the matching key:
+
+- `GEMINI_API_KEY`
+- `MISTRAL_API_KEY`
+- `DEEPSEEK_API_KEY`
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+
+Use `RAG_RESPONSE_MODE=extractive` for fast local testing without any LLM provider.

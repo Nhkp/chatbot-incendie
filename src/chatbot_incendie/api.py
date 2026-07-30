@@ -7,11 +7,12 @@ from typing import Protocol
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from chatbot_incendie.llm import DEFAULT_LLM_MODEL
+from chatbot_incendie.llm import LlmProvider, default_model_for_provider
 from chatbot_incendie.milvus_store import DEFAULT_MILVUS_COLLECTION, DEFAULT_MILVUS_URI
 from chatbot_incendie.rag import ChatAnswer, ResponseMode, build_default_rag_service
 
 DEFAULT_LLM_MAX_NEW_TOKENS = 80
+DEFAULT_LLM_TEMPERATURE = 0.0
 
 
 class ChatService(Protocol):
@@ -79,11 +80,15 @@ def create_app(service: ChatService | None = None) -> FastAPI:
 
 @lru_cache(maxsize=1)
 def _default_service() -> ChatService:
+    provider = LlmProvider(os.environ.get("LLM_PROVIDER", LlmProvider.GEMINI))
     return build_default_rag_service(
         milvus_uri=os.environ.get("MILVUS_URI", DEFAULT_MILVUS_URI),
         collection_name=os.environ.get("MILVUS_COLLECTION", DEFAULT_MILVUS_COLLECTION),
-        llm_model_name=os.environ.get("LLM_MODEL_NAME", DEFAULT_LLM_MODEL),
+        llm_provider=provider,
+        llm_model_name=os.environ.get("LLM_MODEL_NAME", default_model_for_provider(provider)),
         llm_max_new_tokens=_env_int("LLM_MAX_NEW_TOKENS", DEFAULT_LLM_MAX_NEW_TOKENS),
+        llm_temperature=_env_float("LLM_TEMPERATURE", DEFAULT_LLM_TEMPERATURE),
+        api_keys=_llm_api_keys(),
         response_mode=ResponseMode(os.environ.get("RAG_RESPONSE_MODE", ResponseMode.EXTRACTIVE)),
     )
 
@@ -96,3 +101,20 @@ def _env_int(name: str, default: int) -> int:
     if value is None:
         return default
     return int(value)
+
+
+def _env_float(name: str, default: float) -> float:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return float(value)
+
+
+def _llm_api_keys() -> dict[str, str]:
+    return {
+        "GEMINI_API_KEY": os.environ.get("GEMINI_API_KEY", ""),
+        "MISTRAL_API_KEY": os.environ.get("MISTRAL_API_KEY", ""),
+        "DEEPSEEK_API_KEY": os.environ.get("DEEPSEEK_API_KEY", ""),
+        "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", ""),
+        "ANTHROPIC_API_KEY": os.environ.get("ANTHROPIC_API_KEY", ""),
+    }

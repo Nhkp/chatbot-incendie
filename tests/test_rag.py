@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
-from chatbot_incendie.llm import TextGenerator
+from chatbot_incendie.llm import GeminiApiGenerator, LlmProvider, TextGenerator
 from chatbot_incendie.milvus_store import MilvusConfig, MilvusSearchResult
 from chatbot_incendie.rag import (
     SAFE_UNKNOWN_ANSWER,
@@ -33,6 +33,14 @@ class FakeGenerator(TextGenerator):
         if self.prompts is not None:
             self.prompts.append(prompt)
         return "Le risque feu de forêt en Gironde est élevé selon la source [1]."
+
+
+@dataclass(frozen=True)
+class FailingGenerator(TextGenerator):
+    model_name: str = "failing-provider"
+
+    def generate(self, prompt: str) -> str:
+        raise ValueError("provider failed")
 
 
 def test_rag_service_returns_answer_and_citations() -> None:
@@ -90,6 +98,21 @@ def test_rag_service_returns_safe_unknown_without_context() -> None:
     assert answer.retrieved_count == 0
 
 
+def test_rag_service_returns_safe_unknown_when_provider_fails() -> None:
+    service = RagService(
+        embedder=FakeEmbedder([0.1, 0.2]),
+        generator=FailingGenerator(),
+        milvus_config=MilvusConfig(vector_dimension=2),
+        search=_fake_search,
+    )
+
+    answer = service.answer_question("Quel est le risque ?", top_k=1)
+
+    assert answer.answer == SAFE_UNKNOWN_ANSWER
+    assert answer.retrieved_count == 1
+    assert answer.model_name == "failing-provider"
+
+
 def test_build_prompt_constrains_answer_to_context_and_safety() -> None:
     prompt = build_prompt(
         "J'habite à Audenge, puis-je rentrer chez moi ?",
@@ -109,6 +132,19 @@ def test_build_default_rag_service_uses_extractive_mode_without_llm() -> None:
     service = build_default_rag_service(response_mode=ResponseMode.EXTRACTIVE)
 
     assert isinstance(service.generator, ExtractiveGenerator)
+
+
+def test_build_default_rag_service_selects_cloud_provider() -> None:
+    service = build_default_rag_service(
+        response_mode=ResponseMode.LLM,
+        llm_provider=LlmProvider.GEMINI,
+        llm_model_name="",
+        llm_max_new_tokens=120,
+        api_keys={"GEMINI_API_KEY": "key"},
+    )
+
+    assert isinstance(service.generator, GeminiApiGenerator)
+    assert service.generator.model_name == "gemini-3.6-flash"
 
 
 def _fake_search(
